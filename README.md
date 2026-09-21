@@ -58,10 +58,34 @@ python scripts/run_once.py
 python -m assetmgr.scheduler
 ```
 
-주기는 `.env`의 `REFRESH_INTERVAL_MINUTES`로 조절합니다(기본 60분). 서버에
-계속 띄워두려면 `systemd`, `pm2`, `tmux`, 또는 `cron + run_once.py` 중 편한
-방식으로 상시 실행하세요. 이 리포지토리 자체는 배포/호스팅 설정을 포함하지
-않습니다.
+주기는 `.env`의 `REFRESH_INTERVAL_MINUTES`로 조절합니다(기본 60분).
+
+**2-1) 로컬 PC에서 완전 자동으로 실행 (컴퓨터가 켜져 있는 동안 계속)**
+
+아래 스크립트를 로컬에서 1회만 실행하면, 로그인할 때마다 자동으로 시작되고
+꺼지면 자동으로 재시작되도록 등록됩니다 (먼저 `config/portfolio.yaml`을
+만들어둬야 합니다).
+
+```bash
+# macOS
+bash scripts/local/install_macos.sh
+
+# Linux (systemd 사용 가능한 배포판)
+bash scripts/local/install_linux.sh
+```
+
+- 중지: macOS는 `launchctl unload ~/Library/LaunchAgents/com.assetmgr.scheduler.plist`,
+  Linux는 `systemctl --user disable --now assetmgr-scheduler.service`
+- 로그: macOS는 `data/scheduler.log`, Linux는 `journalctl --user -u assetmgr-scheduler.service -f`
+
+**Windows**는 스크립트 대신 작업 스케줄러(Task Scheduler)를 직접 등록하세요:
+"작업 만들기" -> 트리거 "로그온할 때" -> 동작 "프로그램 시작"에
+`python.exe`, 인수에 `-m assetmgr.scheduler`, "시작 위치"에 이 리포지토리
+경로를 지정합니다.
+
+컨테이너/서버에 올릴 경우 `systemd`, `pm2`, `tmux`, 또는
+`cron + run_once.py` 중 편한 방식으로 상시 실행하면 됩니다. 이 리포지토리
+자체는 배포/호스팅 설정을 포함하지 않습니다.
 
 **3) 대시보드 보기**
 
