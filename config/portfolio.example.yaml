@@ -1,0 +1,23 @@
+# 보유 자산 목록 예시 파일입니다.
+# 이 파일을 복사해서 config/portfolio.yaml로 저장한 뒤, 실제 보유 내역으로 수정하세요.
+#   cp config/portfolio.example.yaml config/portfolio.yaml
+#
+# 국내 주식 티커는 .KS(코스피)/.KQ(코스닥) 접미사를 붙입니다 (예: 삼성전자 005930.KS).
+# 해외 주식은 티커를 그대로 씁니다 (예: AAPL, TSLA).
+# 코인 심볼은 assetmgr/providers/crypto.py의 SYMBOL_TO_ID 매핑에 등록된 것만 사용 가능합니다.
+
+stocks:
+  - ticker: "005930.KS"
+    label: "삼성전자"
+    quantity: 10
+  - ticker: "AAPL"
+    label: "Apple"
+    quantity: 5
+
+crypto:
+  - symbol: "BTC"
+    label: "비트코인"
+    quantity: 0.05
+  - symbol: "ETH"
+    label: "이더리움"
+    quantity: 1.2
