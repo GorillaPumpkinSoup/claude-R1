@@ -22,9 +22,9 @@ INK_MUTED = "#898781"
 GRIDLINE = "#e1e0d9"
 SURFACE = "#fcfcfb"
 
-CLASS_ORDER = ["stock", "crypto"]  # 고정 순서 - 데이터 값 기준으로 재배열하지 않음
-CLASS_COLOR = {"stock": "#2a78d6", "crypto": "#eb6834"}  # 팔레트 slot 1(blue), slot 2(orange)
-CLASS_LABEL = {"stock": "주식", "crypto": "코인"}
+CLASS_ORDER = ["stock", "crypto", "cash"]  # 고정 순서 - 데이터 값 기준으로 재배열하지 않음
+CLASS_COLOR = {"stock": "#2a78d6", "crypto": "#eb6834", "cash": "#1baf7a"}  # 팔레트 slot 1/2/3
+CLASS_LABEL = {"stock": "주식", "crypto": "코인", "cash": "현금"}
 
 STATUS_COLOR = {SIGNAL_STRONG: "#0ca30c", SIGNAL_NEUTRAL: INK_MUTED, SIGNAL_WEAK: "#d03b3b"}
 STATUS_ICON = {SIGNAL_STRONG: "▲", SIGNAL_NEUTRAL: "●", SIGNAL_WEAK: "▼"}
@@ -172,18 +172,19 @@ for a in latest["assets"]:
         })
         continue
     ind = a["indicators"]
+    is_cash = a["class"] == "cash"
     rows.append({
         "계좌": a.get("account") or "-",
         "구분": CLASS_LABEL.get(a["class"], a["class"]),
         "종목": a["label"],
-        "수량": a["quantity"],
+        "수량": "-" if is_cash else a["quantity"],
         "매입가": fmt_money(a["avg_price"]) if a.get("avg_price") is not None else "-",
-        "현재가": fmt_money(a["price"]),
+        "현재가": "-" if is_cash else fmt_money(a["price"]),
         "평가금액": fmt_money(a["value"]),
         "손익": f"{fmt_money(a['pnl'])} ({a['pnl_pct'] * 100:+.1f}%)" if a.get("pnl") is not None else "-",
         "1일 변동": f"{ind['change_1d_pct'] * 100:+.2f}%" if ind.get("change_1d_pct") is not None else "-",
         "RSI(14)": f"{ind['rsi14']:.0f}" if ind.get("rsi14") is not None else "-",
-        "신호": a["signal"]["label"],
+        "신호": "-" if is_cash else a["signal"]["label"],
         "근거": ", ".join(a["signal"]["reasons"]) or "-",
     })
 st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)

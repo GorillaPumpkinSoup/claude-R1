@@ -26,3 +26,11 @@ crypto:
   - symbol: "ETH"
     label: "이더리움"
     quantity: 1.2
+
+# 계좌별 예수금(현금). account가 실제 계좌 구분과 일치할 필요는 없고, 표시용 라벨입니다.
+# 예수금은 시세 조회 없이 금액 그대로 총자산/배분에 반영됩니다.
+cash:
+  - account: "일반"
+    amount: 5000000
+  - account: "ISA"
+    amount: 1000000

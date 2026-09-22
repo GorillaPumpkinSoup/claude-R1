@@ -6,13 +6,7 @@ from datetime import datetime, timezone
 from . import commentary as commentary_mod
 from .indicators import compute_indicators
 from .providers import crypto, stocks
-from .signals import label_for_score, score_asset
-
-CLASS_LABELS = {
-    "stock": "주식",
-    "crypto": "코인",
-}
-
+from .signals import SIGNAL_NEUTRAL, label_for_score, score_asset
 
 def _build_asset_entry(
     asset_class: str,
@@ -45,6 +39,25 @@ def _build_asset_entry(
         "pnl_pct": pnl_pct,
         "indicators": indicators,
         "signal": signal,
+        "error": None,
+    }
+
+
+def _build_cash_entry(account: str, amount: float, label: str) -> dict:
+    return {
+        "class": "cash",
+        "ticker": None,
+        "label": label,
+        "account": account,
+        "quantity": 1.0,
+        "price": amount,
+        "value": amount,
+        "avg_price": None,
+        "cost_basis": None,
+        "pnl": None,
+        "pnl_pct": None,
+        "indicators": {},
+        "signal": {"score": 0, "label": SIGNAL_NEUTRAL, "reasons": []},
         "error": None,
     }
 
@@ -89,6 +102,15 @@ def build_snapshot(portfolio: dict) -> dict:
                 "class": "crypto", "ticker": symbol, "label": label, "account": account,
                 "quantity": quantity, "error": str(exc),
             })
+
+    for item in portfolio.get("cash", []) or []:
+        account = item.get("account") or "미분류"
+        amount = float(item["amount"])
+        label = item.get("label") or f"{account} 예수금"
+        entry = _build_cash_entry(account, amount, label)
+        assets.append(entry)
+        total_value += entry["value"]
+        # 현금은 강세/약세 신호에 기여하지 않고(score 0) 총자산에만 더해져 신호를 중립 쪽으로 희석시킴
 
     portfolio_score = weighted_score / total_value if total_value > 0 else 0.0
     total_cost_basis = sum(a["cost_basis"] for a in assets if not a.get("error") and a.get("cost_basis") is not None)
