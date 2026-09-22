@@ -21,6 +21,7 @@ def generate_commentary(snapshot: dict) -> str:
     payload = {
         "portfolio_score": snapshot["portfolio_score"],
         "portfolio_label": snapshot["portfolio_label"],
+        "total_pnl_pct": snapshot.get("total_pnl_pct"),
         "allocation_pct": snapshot["allocation_pct"],
         "assets": [
             {
@@ -29,6 +30,7 @@ def generate_commentary(snapshot: dict) -> str:
                 "signal": a.get("signal", {}).get("label"),
                 "reasons": a.get("signal", {}).get("reasons"),
                 "change_1d_pct": a.get("indicators", {}).get("change_1d_pct"),
+                "pnl_pct": a.get("pnl_pct"),
             }
             for a in snapshot["assets"]
             if not a.get("error")

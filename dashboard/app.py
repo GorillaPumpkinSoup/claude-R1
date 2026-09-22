@@ -42,6 +42,12 @@ def fmt_money(v: float) -> str:
     return f"{v:,.0f}"
 
 
+def pnl_badge(pnl: float, pnl_pct: float) -> str:
+    color = "#0ca30c" if pnl >= 0 else "#d03b3b"
+    icon = "▲" if pnl >= 0 else "▼"
+    return f'<span style="color:{color}; font-weight:600;">{icon} {fmt_money(pnl)} ({pnl_pct * 100:+.1f}%)</span>'
+
+
 @st.cache_data(ttl=60)
 def load_data(db_path: str):
     conn = db.get_connection(db_path)
@@ -68,13 +74,18 @@ if not latest:
 generated_at = datetime.fromisoformat(latest["generated_at"]).astimezone()
 age_minutes = (datetime.now(timezone.utc) - datetime.fromisoformat(latest["generated_at"])).total_seconds() / 60
 
-# --- 상단 요약: 총자산 / 마지막 갱신 / 포트폴리오 신호 ---
-col1, col2, col3 = st.columns(3)
+# --- 상단 요약: 총자산 / 총손익 / 마지막 갱신 / 포트폴리오 신호 ---
+col1, col2, col3, col4 = st.columns(4)
 with col1:
     st.metric("총자산", f"{fmt_money(latest['total_value'])}")
 with col2:
-    st.markdown(f"**마지막 갱신**  \n{generated_at:%Y-%m-%d %H:%M} ({age_minutes:.0f}분 전)")
+    if latest.get("total_pnl") is not None:
+        st.markdown(f"**평가손익 (매입가 대비)**  \n{pnl_badge(latest['total_pnl'], latest['total_pnl_pct'])}", unsafe_allow_html=True)
+    else:
+        st.markdown("**평가손익**  \n-")
 with col3:
+    st.markdown(f"**마지막 갱신**  \n{generated_at:%Y-%m-%d %H:%M} ({age_minutes:.0f}분 전)")
+with col4:
     st.markdown(f"**포트폴리오 신호**  \n{status_badge(latest['portfolio_label'])}", unsafe_allow_html=True)
 
 if age_minutes > config.REFRESH_INTERVAL_MINUTES * 2:
@@ -154,6 +165,7 @@ rows = []
 for a in latest["assets"]:
     if a.get("error"):
         rows.append({
+            "계좌": a.get("account") or "-",
             "구분": CLASS_LABEL.get(a["class"], a["class"]),
             "종목": a["label"],
             "상태": f"오류: {a['error']}",
@@ -161,11 +173,14 @@ for a in latest["assets"]:
         continue
     ind = a["indicators"]
     rows.append({
+        "계좌": a.get("account") or "-",
         "구분": CLASS_LABEL.get(a["class"], a["class"]),
         "종목": a["label"],
         "수량": a["quantity"],
+        "매입가": fmt_money(a["avg_price"]) if a.get("avg_price") is not None else "-",
         "현재가": fmt_money(a["price"]),
         "평가금액": fmt_money(a["value"]),
+        "손익": f"{fmt_money(a['pnl'])} ({a['pnl_pct'] * 100:+.1f}%)" if a.get("pnl") is not None else "-",
         "1일 변동": f"{ind['change_1d_pct'] * 100:+.2f}%" if ind.get("change_1d_pct") is not None else "-",
         "RSI(14)": f"{ind['rsi14']:.0f}" if ind.get("rsi14") is not None else "-",
         "신호": a["signal"]["label"],

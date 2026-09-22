@@ -14,17 +14,35 @@ CLASS_LABELS = {
 }
 
 
-def _build_asset_entry(asset_class: str, ticker: str, label: str, quantity: float, history) -> dict:
+def _build_asset_entry(
+    asset_class: str,
+    ticker: str,
+    label: str,
+    quantity: float,
+    history,
+    avg_price: float | None = None,
+    account: str | None = None,
+) -> dict:
     indicators = compute_indicators(history)
     signal = score_asset(indicators)
     value = indicators["price"] * quantity
+
+    cost_basis = avg_price * quantity if avg_price is not None else None
+    pnl = value - cost_basis if cost_basis is not None else None
+    pnl_pct = (value / cost_basis - 1) if cost_basis else None
+
     return {
         "class": asset_class,
         "ticker": ticker,
         "label": label,
+        "account": account,
         "quantity": quantity,
         "price": indicators["price"],
         "value": value,
+        "avg_price": avg_price,
+        "cost_basis": cost_basis,
+        "pnl": pnl,
+        "pnl_pct": pnl_pct,
         "indicators": indicators,
         "signal": signal,
         "error": None,
@@ -40,15 +58,17 @@ def build_snapshot(portfolio: dict) -> dict:
         ticker = item["ticker"]
         label = item.get("label", ticker)
         quantity = float(item["quantity"])
+        avg_price = float(item["avg_price"]) if item.get("avg_price") is not None else None
+        account = item.get("account")
         try:
             data = stocks.fetch_stock_snapshot(ticker)
-            entry = _build_asset_entry("stock", ticker, label, quantity, data["history"])
+            entry = _build_asset_entry("stock", ticker, label, quantity, data["history"], avg_price, account)
             assets.append(entry)
             total_value += entry["value"]
             weighted_score += entry["signal"]["score"] * entry["value"]
         except Exception as exc:  # 개별 종목 실패가 전체 스냅샷을 막지 않도록
             assets.append({
-                "class": "stock", "ticker": ticker, "label": label,
+                "class": "stock", "ticker": ticker, "label": label, "account": account,
                 "quantity": quantity, "error": str(exc),
             })
 
@@ -56,19 +76,24 @@ def build_snapshot(portfolio: dict) -> dict:
         symbol = item["symbol"]
         label = item.get("label", symbol)
         quantity = float(item["quantity"])
+        avg_price = float(item["avg_price"]) if item.get("avg_price") is not None else None
+        account = item.get("account")
         try:
             data = crypto.fetch_crypto_snapshot(symbol)
-            entry = _build_asset_entry("crypto", symbol, label, quantity, data["history"])
+            entry = _build_asset_entry("crypto", symbol, label, quantity, data["history"], avg_price, account)
             assets.append(entry)
             total_value += entry["value"]
             weighted_score += entry["signal"]["score"] * entry["value"]
         except Exception as exc:
             assets.append({
-                "class": "crypto", "ticker": symbol, "label": label,
+                "class": "crypto", "ticker": symbol, "label": label, "account": account,
                 "quantity": quantity, "error": str(exc),
             })
 
     portfolio_score = weighted_score / total_value if total_value > 0 else 0.0
+    total_cost_basis = sum(a["cost_basis"] for a in assets if not a.get("error") and a.get("cost_basis") is not None)
+    total_pnl = total_value - total_cost_basis if total_cost_basis else None
+    total_pnl_pct = (total_value / total_cost_basis - 1) if total_cost_basis else None
 
     allocation_value: dict[str, float] = {}
     for a in assets:
@@ -82,6 +107,9 @@ def build_snapshot(portfolio: dict) -> dict:
     return {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "total_value": total_value,
+        "total_cost_basis": total_cost_basis or None,
+        "total_pnl": total_pnl,
+        "total_pnl_pct": total_pnl_pct,
         "portfolio_score": portfolio_score,
         "portfolio_label": label_for_score(portfolio_score),
         "allocation_value": allocation_value,

@@ -2,14 +2,19 @@
 # 이 파일을 복사해서 config/portfolio.yaml로 저장한 뒤, 실제 보유 내역으로 수정하세요.
 #   cp config/portfolio.example.yaml config/portfolio.yaml
 #
-# 국내 주식 티커는 .KS(코스피)/.KQ(코스닥) 접미사를 붙입니다 (예: 삼성전자 005930.KS).
+# 국내 주식/ETF 티커는 .KS(코스피)/.KQ(코스닥) 접미사를 붙입니다 (예: 삼성전자 005930.KS).
 # 해외 주식은 티커를 그대로 씁니다 (예: AAPL, TSLA).
 # 코인 심볼은 assetmgr/providers/crypto.py의 SYMBOL_TO_ID 매핑에 등록된 것만 사용 가능합니다.
+#
+# avg_price(평균 단가)와 account(계좌 구분)는 선택 항목입니다. avg_price를 넣으면
+# 대시보드에 매입가 대비 평가손익이 함께 표시됩니다.
 
 stocks:
   - ticker: "005930.KS"
     label: "삼성전자"
     quantity: 10
+    avg_price: 67909
+    account: "일반"
   - ticker: "AAPL"
     label: "Apple"
     quantity: 5
